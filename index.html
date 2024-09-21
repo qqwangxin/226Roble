@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar and Events</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .tabs {
+            display: flex;
+            justify-content: center;
+            border-bottom: 1px solid #e0e0e0;
+            margin-bottom: 24px;
+        }
+        .tab {
+            padding: 16px 24px;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #5f6368;
+            transition: color 0.3s;
+            position: relative;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .tab:hover {
+            color: #1a73e8;
+        }
+        .tab.active {
+            color: #1a73e8;
+        }
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: #1a73e8;
+        }
+        .tab-content {
+            display: none;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .tab-content.active {
+            display: block;
+        }
+        #calendar-container {
+            width: 100%;
+            height: 600px;
+        }
+        #calendar-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        #events-container {
+            height: 600px;
+            overflow-y: auto;
+            font-size: 14px;
+        }
+        .visit-section {
+            margin-bottom: 24px;
+        }
+        .section-title {
+            font-size: 20px;
+            font-weight: 500;
+            color: #202124;
+            margin-bottom: 16px;
+        }
+        .event-section h3 {
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 18px;
+            font-weight: 500;
+            color: #5f6368;
+        }
+        .event {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .event-date {
+            width: 60px;
+            text-align: center;
+            margin-right: 16px;
+        }
+        .event-day {
+            font-size: 24px;
+            font-weight: 500;
+            color: #202124;
+        }
+        .event-weekday {
+            font-size: 12px;
+            color: #5f6368;
+            text-transform: uppercase;
+        }
+        .event-content {
+            flex-grow: 1;
+        }
+        .event-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #202124;
+            margin-bottom: 4px;
+        }
+        .event-subtitle {
+            font-size: 14px;
+            color: #5f6368;
+        }
+        .event-duration {
+            font-size: 14px;
+            color: #5f6368;
+            background-color: #f1f3f4;
+            padding: 2px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-top: 4px;
+        }
+        .event-assignee {
+            margin-left: 16px;
+        }
+        .event-assignee img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+        }
+        .event-status {
+            font-size: 14px;
+            color: #5f6368;
+            margin-bottom: 8px;
+        }
+        .event-actions button {
+            padding: 6px 12px;
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .event-actions button:hover {
+            background-color: #185abc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="tabs">
+            <button class="tab active" onclick="openTab(event, 'list-view')">List View</button>
+            <button class="tab" onclick="openTab(event, 'calendar-view')">Calendar View</button>
+        </div>
+
+        <div id="list-view" class="tab-content active">
+            <div id="events-container">
+                <div id="events-list"></div>
+            </div>
+        </div>
+
+        <div id="calendar-view" class="tab-content">
+            <div id="calendar-container">
+                <iframe src="https://calendar.google.com/calendar/embed?src=55u73cplno3loj2vge8d6sd7h3gv941f%40import.calendar.google.com&ctz=America%2FLos_Angeles" frameborder="0" scrolling="no"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ical.js/1.5.0/ical.min.js"></script>
+    <script>
+        // Initialize local storage for event statuses if it doesn't exist
+        if (!localStorage.getItem('eventStatuses')) {
+            localStorage.setItem('eventStatuses', JSON.stringify({}));
+        }
+
+        function getEventStatus(eventId) {
+            const statuses = JSON.parse(localStorage.getItem('eventStatuses'));
+            return statuses[eventId] || 'Unconfirmed';
+        }
+
+        function setEventStatus(eventId, status) {
+            const statuses = JSON.parse(localStorage.getItem('eventStatuses'));
+            statuses[eventId] = status;
+            localStorage.setItem('eventStatuses', JSON.stringify(statuses));
+        }
+
+        function formatEventElement(event, isNextVisit = false) {
+            const startDate = event.startDate;
+            const endDate = event.endDate;
+            const eventId = `${startDate.getTime()}-${endDate.getTime()}`;
+            const status = getEventStatus(eventId);
+            
+            const eventElement = document.createElement('div');
+            eventElement.className = 'event';
+            eventElement.innerHTML = `
+                <div class="event-date">
+                    <div class="event-day">${startDate.getDate()}</div>
+                    <div class="event-weekday">${startDate.toLocaleString('en-us', {weekday: 'short'})}</div>
+                </div>
+                <div class="event-content">
+                    <div class="event-title">${event.summary}</div>
+                    <div class="event-subtitle">Marketing operations</div>
+                    <div class="event-duration">${startDate.toLocaleString('en-us', {month: 'short', day: 'numeric'})} - ${endDate.toLocaleString('en-us', {month: 'short', day: 'numeric'})}</div>
+                    ${isNextVisit ? '' : `
+                        <div class="event-status">Status: <span id="status-${eventId}">${status}</span></div>
+                        <div class="event-actions">
+                            ${status === 'Unconfirmed' ? 
+                                `<button onclick="toggleEventStatus('${eventId}')">Confirm</button>` : 
+                                `<button onclick="toggleEventStatus('${eventId}')">Cancel</button>`}
+                        </div>
+                    `}
+                </div>
+                <div class="event-assignee">
+                    <img src="https://via.placeholder.com/32" alt="Assignee">
+                </div>
+            `;
+            return eventElement;
+        }
+
+        function toggleEventStatus(eventId) {
+            const currentStatus = getEventStatus(eventId);
+            const newStatus = currentStatus === 'Unconfirmed' ? 'Confirmed' : 'Unconfirmed';
+            setEventStatus(eventId, newStatus);
+            updateEventUI(eventId);
+        }
+
+        function updateEventUI(eventId) {
+            const status = getEventStatus(eventId);
+            const statusElements = document.querySelectorAll(`#status-${eventId}`);
+            statusElements.forEach(element => {
+                element.textContent = status;
+            });
+            const actionElements = document.querySelectorAll(`#status-${eventId}`).forEach(element => {
+                const actionsDiv = element.closest('.event-content').querySelector('.event-actions');
+                actionsDiv.innerHTML = status === 'Unconfirmed' ?
+                    `<button onclick="toggleEventStatus('${eventId}')">Confirm</button>` :
+                    `<button onclick="toggleEventStatus('${eventId}')">Cancel</button>`;
+            });
+        }
+
+        async function fetchAndDisplayEvents() {
+            const icalUrl = 'https://calendar.google.com/calendar/ical/55u73cplno3loj2vge8d6sd7h3gv941f%40import.calendar.google.com/public/basic.ics';
+            const corsProxyUrl = 'https://cors-anywhere.herokuapp.com/';
+            try {
+                const response = await fetch(corsProxyUrl + icalUrl);
+                const data = await response.text();
+                const jcalData = ICAL.parse(data);
+                const comp = new ICAL.Component(jcalData);
+                const events = comp.getAllSubcomponents('vevent');
+
+                const filteredEvents = events
+                    .filter(event => {
+                        const summary = event.getFirstPropertyValue('summary');
+                        return summary.toLowerCase().includes("reserved");
+                    })
+                    .map(event => ({
+                        summary: event.getFirstPropertyValue('summary'),
+                        startDate: event.getFirstPropertyValue('dtstart').toJSDate(),
+                        endDate: event.getFirstPropertyValue('dtend').toJSDate()
+                    }))
+                    .sort((a, b) => a.startDate - b.startDate);
+
+                const eventsList = document.getElementById('events-list');
+                eventsList.innerHTML = ''; // Clear existing events
+
+                // Add the "Next Visit" section
+                if (filteredEvents.length > 0) {
+                    const nextVisit = filteredEvents[0];
+                    const nextVisitSection = document.createElement('div');
+                    nextVisitSection.className = 'visit-section';
+                    nextVisitSection.innerHTML = `
+                        <h2 class="section-title">Next Visit</h2>
+                        ${formatEventElement(nextVisit, true).outerHTML}
+                    `;
+                    eventsList.appendChild(nextVisitSection);
+                }
+
+                // Add the "All Bookings" section
+                const allBookingsSection = document.createElement('div');
+                allBookingsSection.className = 'all-bookings';
+                allBookingsSection.innerHTML = '<h2 class="section-title">All Bookings</h2>';
+                eventsList.appendChild(allBookingsSection);
+
+                // Group events into months
+                let currentMonth = '';
+                let currentSection;
+
+                filteredEvents.forEach(event => {
+                    const eventMonth = event.startDate.toLocaleString('default', { month: 'long' });
+                    if (eventMonth !== currentMonth) {
+                        currentMonth = eventMonth;
+                        currentSection = createSection(event.startDate);
+                        allBookingsSection.appendChild(currentSection);
+                    }
+
+                    const eventElement = formatEventElement(event);
+                    currentSection.appendChild(eventElement);
+                });
+
+            } catch (error) {
+                console.error('Error fetching events:', error);
+                document.getElementById('events-list').innerHTML = '<p>Error loading events. Please try again later.</p>';
+            }
+        }
+
+        function createSection(date) {
+            const section = document.createElement('div');
+            section.className = 'event-section';
+            const title = document.createElement('h3');
+            title.className = 'month-header';
+            title.textContent = date.toLocaleString('default', { month: 'long' });
+            section.appendChild(title);
+            return section;
+        }
+
+        function openTab(evt, tabName) {
+            var i, tabContent, tabLinks;
+            tabContent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabContent.length; i++) {
+                tabContent[i].style.display = "none";
+            }
+            tabLinks = document.getElementsByClassName("tab");
+            for (i = 0; i < tabLinks.length; i++) {
+                tabLinks[i].className = tabLinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+
+        fetchAndDisplayEvents();
+    </script>
+</body>
+</html>
