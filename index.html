@@ -27,11 +27,12 @@
             z-index: 1;
         }
         .tab {
-            padding: 16px 24px;
+            flex: 1;
+            padding: 16px 8px;
             cursor: pointer;
             border: none;
             background-color: transparent;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 500;
             color: #757575;
             transition: color 0.3s ease;
@@ -39,6 +40,8 @@
             letter-spacing: 0.5px;
             position: relative;
             overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
         }
         .tab::after {
             content: '';
@@ -83,12 +86,9 @@
             border: none;
         }
         @media (max-width: 600px) {
-            .tabs {
-                flex-direction: column;
-            }
             .tab {
-                width: 100%;
-                text-align: center;
+                font-size: 12px;
+                padding: 12px 4px;
             }
             .content {
                 margin: 8px;
@@ -100,11 +100,11 @@
     <div class="container">
         <div class="tabs">
             <button class="tab active" onclick="openTab('next-cleaning')">Next Cleaning</button>
-            <button class="tab" onclick="openTab('calendar-view')">All Bookings</button>
+            <button class="tab" onclick="openTab('calendar-view')">Calendar View</button>
         </div>
         <div class="content">
             <div id="next-cleaning" class="tab-content active">
-                <iframe src="https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=America%2FLos_Angeles&bgcolor=%237CB342&mode=AGENDA&src=OTNkNzZiN2M1MWY0NDgyZGQ5NTRhMTNlMTk1NWJjOTY1YWQ4ODM0MGU4ZmYwYmNkNDk0M2YzNzQyMTNlNGI4YkBncm91cC5jYWxlbmRhci5nb29nbGUuY29t&color=%23E4C441" style="border:solid 1px #777" frameborder="0" scrolling="no"></iframe>
+                <iframe src="https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=America%2FLos_Angeles&bgcolor=%234285F4&src=OTNkNzZiN2M1MWY0NDgyZGQ5NTRhMTNlMTk1NWJjOTY1YWQ4ODM0MGU4ZmYwYmNkNDk0M2YzNzQyMTNlNGI4YkBncm91cC5jYWxlbmRhci5nb29nbGUuY29t&color=%23E4C441" style="border:solid 1px #777" frameborder="0" scrolling="no"></iframe>
             </div>
             <div id="calendar-view" class="tab-content">
                 <iframe src="https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=America%2FLos_Angeles&bgcolor=%237CB342&title=Nancy%20226%20Roble%20Clean%20Calendar&src=OTNkNzZiN2M1MWY0NDgyZGQ5NTRhMTNlMTk1NWJjOTY1YWQ4ODM0MGU4ZmYwYmNkNDk0M2YzNzQyMTNlNGI4YkBncm91cC5jYWxlbmRhci5nb29nbGUuY29t&src=NTV1NzNjcGxubzNsb2oydmdlOGQ2c2Q3aDNndjk0MWZAaW1wb3J0LmNhbGVuZGFyLmdvb2dsZS5jb20&color=%23E4C441&color=%237CB342" scrolling="no"></iframe>
