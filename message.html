@@ -62,10 +62,16 @@
         .reminder-sent:hover, .checkout-reminder-sent:hover {
             background-color: #dc3545;
         }
-        #request-access {
+        .header-buttons {
             position: fixed;
             top: 10px;
             right: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+        }
+        #request-access {
             background-color: #007bff;
             color: white;
             border: none;
@@ -73,10 +79,17 @@
             border-radius: 5px;
             cursor: pointer;
             font-size: 14px;
-            z-index: 1000;
         }
         #request-access:hover {
             background-color: #0056b3;
+        }
+        #reset-status {
+            color: #007bff;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        #reset-status:hover {
+            text-decoration: underline;
         }
 
         @media (max-width: 600px) {
@@ -106,7 +119,10 @@
     </style>
 </head>
 <body>
-    <button id="request-access">Request Access</button>
+    <div class="header-buttons">
+        <button id="request-access">Request Access</button>
+        <a href="#" id="reset-status">Reset</a>
+    </div>
     <h1>Send Reminder</h1>
     <ul id="events-list"></ul>
 
@@ -122,6 +138,22 @@
         document.getElementById('request-access').addEventListener('click', function() {
             window.open('https://cors-anywhere.herokuapp.com/corsdemo', '_blank');
         });
+
+        // Add event listener for the Reset link
+        document.getElementById('reset-status').addEventListener('click', function(e) {
+            e.preventDefault();
+            resetAllStatuses();
+        });
+
+        function resetAllStatuses() {
+            reminderStatus = {};
+            checkoutReminderStatus = {};
+            localStorage.setItem('reminderStatus', JSON.stringify(reminderStatus));
+            localStorage.setItem('checkoutReminderStatus', JSON.stringify(checkoutReminderStatus));
+            
+            // Refresh the page to reflect the changes
+            location.reload();
+        }
 
         fetch(corsProxyUrl + icalUrl)
             .then(response => response.text())
@@ -256,19 +288,22 @@
 
         function sendSMS(phoneNumber, message) {
             const encodedMessage = encodeURIComponent(message);
-            let smsUrl;
+            let url;
 
             // Check if the device is iOS
             if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
                 // iOS devices
-                smsUrl = `sms:${phoneNumber}&body=${encodedMessage}`;
+                url = `tel:${phoneNumber}`;
+                
+                // Show an alert with the message to copy
+                alert('Please copy this message:\n\n' + message);
             } else {
                 // Android and other devices
-                smsUrl = `sms:${phoneNumber}?body=${encodedMessage}`;
+                url = `sms:${phoneNumber}?body=${encodedMessage}`;
             }
 
-            // Attempt to open the native messaging app
-            window.location.href = smsUrl;
+            // Attempt to open the phone app (iOS) or messaging app (Android)
+            window.location.href = url;
         }
     </script>
 </body>
