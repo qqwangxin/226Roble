@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send Reminder</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            font-size: 24px;
+            margin-top: 60px;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        li {
+            background-color: #fff;
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .event-date {
+            font-weight: bold;
+            color: #007bff;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .button-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .send-reminder, .send-checkout-reminder {
+            flex: 1;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .send-reminder:hover, .send-checkout-reminder:hover {
+            background-color: #218838;
+        }
+        .reminder-sent, .checkout-reminder-sent {
+            background-color: #dc3545;
+            cursor: default;
+        }
+        .reminder-sent:hover, .checkout-reminder-sent:hover {
+            background-color: #dc3545;
+        }
+        #request-access {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            z-index: 1000;
+        }
+        #request-access:hover {
+            background-color: #0056b3;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            h1 {
+                font-size: 20px;
+                margin-top: 50px;
+            }
+            li {
+                padding: 10px;
+            }
+            .button-container {
+                flex-direction: column;
+            }
+            .send-reminder, .send-checkout-reminder {
+                width: 100%;
+                padding: 10px;
+                font-size: 16px;
+            }
+            #request-access {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button id="request-access">Request Access</button>
+    <h1>Send Reminder</h1>
+    <ul id="events-list"></ul>
+
+    <script>
+        const icalUrl = 'https://calendar.google.com/calendar/ical/55u73cplno3loj2vge8d6sd7h3gv941f%40import.calendar.google.com/public/basic.ics';
+        const corsProxyUrl = 'https://cors-anywhere.herokuapp.com/';
+
+        // Initialize local storage for reminder status
+        let reminderStatus = JSON.parse(localStorage.getItem('reminderStatus')) || {};
+        let checkoutReminderStatus = JSON.parse(localStorage.getItem('checkoutReminderStatus')) || {};
+
+        // Add event listener for the Request Access button
+        document.getElementById('request-access').addEventListener('click', function() {
+            window.open('https://cors-anywhere.herokuapp.com/corsdemo', '_blank');
+        });
+
+        fetch(corsProxyUrl + icalUrl)
+            .then(response => response.text())
+            .then(data => {
+                let events = parseICalData(data);
+                events = filterAndSortEvents(events);
+                displayEvents(events);
+            })
+            .catch(error => {
+                console.error('Error fetching calendar data:', error);
+                document.getElementById('events-list').innerHTML = '<li>Error loading events. Please try again later.</li>';
+            });
+
+        function parseICalData(icalData) {
+            const events = [];
+            const lines = icalData.split('\n');
+            let currentEvent = {};
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line.startsWith('BEGIN:VEVENT')) {
+                    currentEvent = {};
+                } else if (line.startsWith('END:VEVENT')) {
+                    events.push(currentEvent);
+                } else if (line.startsWith('SUMMARY:')) {
+                    currentEvent.summary = line.substring(8);
+                } else if (line.startsWith('DTSTART;VALUE=DATE:')) {
+                    currentEvent.start = line.substring(19);
+                } else if (line.startsWith('DTEND;VALUE=DATE:')) {
+                    currentEvent.end = line.substring(17);
+                }
+            }
+
+            return events;
+        }
+
+        function filterAndSortEvents(events) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
+
+            return events
+                .filter(event => event.summary === 'Reserved')
+                .filter(event => {
+                    const endDate = new Date(event.end.substring(0, 4), 
+                                             event.end.substring(4, 6) - 1, 
+                                             event.end.substring(6, 8));
+                    return endDate >= today;
+                })
+                .sort((a, b) => a.start.localeCompare(b.start));
+        }
+
+        function formatDate(dateString) {
+            const year = dateString.substring(0, 4);
+            const month = dateString.substring(4, 6);
+            const day = dateString.substring(6, 8);
+            return `${year}-${month}-${day}`;
+        }
+
+        function displayEvents(events) {
+            const eventsList = document.getElementById('events-list');
+            if (events.length === 0) {
+                eventsList.innerHTML = '<li>No current or future "Reserved" events found in the calendar.</li>';
+                return;
+            }
+            events.forEach(event => {
+                const li = document.createElement('li');
+                const eventKey = `${event.start}-${event.end}`;
+                const reminderButtonText = reminderStatus[eventKey] ? 'Reminder Sent' : 'Send Reminder';
+                const reminderButtonClass = reminderStatus[eventKey] ? 'send-reminder reminder-sent' : 'send-reminder';
+                const checkoutButtonText = checkoutReminderStatus[eventKey] ? 'Checkout Reminder Sent' : 'Send Checkout Reminder';
+                const checkoutButtonClass = checkoutReminderStatus[eventKey] ? 'send-checkout-reminder checkout-reminder-sent' : 'send-checkout-reminder';
+                li.innerHTML = `
+                    <span class="event-date">${formatDate(event.start)} to ${formatDate(event.end)}</span>
+                    ${event.summary}
+                    <div class="button-container">
+                        <button class="${reminderButtonClass}" data-start="${event.start}" data-end="${event.end}">${reminderButtonText}</button>
+                        <button class="${checkoutButtonClass}" data-start="${event.start}" data-end="${event.end}">${checkoutButtonText}</button>
+                    </div>
+                `;
+                eventsList.appendChild(li);
+            });
+
+            // Add event listeners to all buttons
+            document.querySelectorAll('.send-reminder').forEach(button => {
+                if (!button.classList.contains('reminder-sent')) {
+                    button.addEventListener('click', sendReminder);
+                }
+            });
+            document.querySelectorAll('.send-checkout-reminder').forEach(button => {
+                if (!button.classList.contains('checkout-reminder-sent')) {
+                    button.addEventListener('click', sendCheckoutReminder);
+                }
+            });
+        }
+
+        function sendReminder(event) {
+            const button = event.target;
+            const startDate = formatDate(button.dataset.start);
+            const endDate = formatDate(button.dataset.end);
+            const message = `Hi Nancy, we have a new booking from ${startDate} to ${endDate}, can you confirm that you are able to clean the house after the guests check out on ${endDate} between 11am to 3:30pm?`;
+            const phoneNumber = '949-331-0983';
+            
+            // Encode the message for URL
+            const encodedMessage = encodeURIComponent(message);
+            
+            // Create the SMS URL
+            const smsUrl = `sms:${phoneNumber}?body=${encodedMessage}`;
+            
+            // Attempt to open the native messaging app
+            window.location.href = smsUrl;
+
+            // Update button state and local storage
+            const eventKey = `${button.dataset.start}-${button.dataset.end}`;
+            reminderStatus[eventKey] = true;
+            localStorage.setItem('reminderStatus', JSON.stringify(reminderStatus));
+
+            button.textContent = 'Reminder Sent';
+            button.classList.add('reminder-sent');
+            button.removeEventListener('click', sendReminder);
+        }
+
+        function sendCheckoutReminder(event) {
+            const button = event.target;
+            const endDate = formatDate(button.dataset.end);
+            const message = "Hey Nancy, this is a quick reminder that the guests at 226 Roble will check out today by 11. Please let me know when you are done with the cleaning so that I can coordinate with next guest's arrival. Friendly reminder to refill welcome snacks, check coffee machine and dishwasher, and trash cans.";
+            const phoneNumber = '949-331-0983';
+            
+            // Encode the message for URL
+            const encodedMessage = encodeURIComponent(message);
+            
+            // Create the SMS URL
+            const smsUrl = `sms:${phoneNumber}?body=${encodedMessage}`;
+            
+            // Attempt to open the native messaging app
+            window.location.href = smsUrl;
+
+            // Update button state and local storage
+            const eventKey = `${button.dataset.start}-${button.dataset.end}`;
+            checkoutReminderStatus[eventKey] = true;
+            localStorage.setItem('checkoutReminderStatus', JSON.stringify(checkoutReminderStatus));
+
+            button.textContent = 'Checkout Reminder Sent';
+            button.classList.add('checkout-reminder-sent');
+            button.removeEventListener('click', sendCheckoutReminder);
+        }
+    </script>
+</body>
+</html>

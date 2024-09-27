@@ -94,10 +94,56 @@
                 margin: 8px;
             }
         }
+
+        /* New styles for menu button and side menu */
+        .menu-button {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 2;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .side-menu {
+            position: fixed;
+            top: 0;
+            left: -250px;
+            width: 250px;
+            height: 100%;
+            background-color: #ffffff;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            transition: left 0.3s ease;
+            z-index: 3;
+        }
+        .side-menu.open {
+            left: 0;
+        }
+        .side-menu ul {
+            list-style-type: none;
+            padding: 0;
+            margin-top: 60px;
+        }
+        .side-menu li {
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .side-menu li:hover {
+            background-color: #f5f5f5;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <button class="menu-button" onclick="toggleMenu()">☰</button>
+        <div class="side-menu" id="sideMenu">
+            <ul>
+                <li onclick="loadView('calendar')">Calendar</li>
+                <li onclick="loadView('message')">Message</li>
+            </ul>
+        </div>
         <div class="tabs">
             <button class="tab active" onclick="openTab('next-cleaning')">Next Cleaning</button>
             <button class="tab" onclick="openTab('calendar-view')">Calendar View</button>
@@ -124,6 +170,37 @@
             
             document.getElementById(tabName).classList.add('active');
             event.currentTarget.classList.add('active');
+        }
+
+        function toggleMenu() {
+            document.getElementById('sideMenu').classList.toggle('open');
+        }
+
+        function loadView(view) {
+            if (view === 'calendar') {
+                // Show the current calendar view
+                document.querySelector('.content').style.display = 'flex';
+                document.querySelector('.tabs').style.display = 'flex';
+                if (document.getElementById('messageView')) {
+                    document.getElementById('messageView').style.display = 'none';
+                }
+            } else if (view === 'message') {
+                // Load and show the message.html view
+                document.querySelector('.content').style.display = 'none';
+                document.querySelector('.tabs').style.display = 'none';
+                let messageView = document.getElementById('messageView');
+                if (!messageView) {
+                    messageView = document.createElement('iframe');
+                    messageView.id = 'messageView';
+                    messageView.src = 'message.html';
+                    messageView.style.width = '100%';
+                    messageView.style.height = 'calc(100vh - 20px)';
+                    messageView.style.border = 'none';
+                    document.querySelector('.container').appendChild(messageView);
+                }
+                messageView.style.display = 'block';
+            }
+            toggleMenu(); // Close the menu after selection
         }
     </script>
 </body>
