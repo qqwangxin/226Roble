@@ -224,14 +224,7 @@
             const message = `Hi Nancy, we have a new booking from ${startDate} to ${endDate}, can you confirm that you are able to clean the house after the guests check out on ${endDate} between 11am to 3:30pm?`;
             const phoneNumber = '949-331-0983';
             
-            // Encode the message for URL
-            const encodedMessage = encodeURIComponent(message);
-            
-            // Create the SMS URL
-            const smsUrl = `sms:${phoneNumber}?body=${encodedMessage}`;
-            
-            // Attempt to open the native messaging app
-            window.location.href = smsUrl;
+            sendSMS(phoneNumber, message);
 
             // Update button state and local storage
             const eventKey = `${button.dataset.start}-${button.dataset.end}`;
@@ -249,14 +242,7 @@
             const message = "Hey Nancy, this is a quick reminder that the guests at 226 Roble will check out today by 11. Please let me know when you are done with the cleaning so that I can coordinate with next guest's arrival. Friendly reminder to refill welcome snacks, check coffee machine and dishwasher, and trash cans.";
             const phoneNumber = '949-331-0983';
             
-            // Encode the message for URL
-            const encodedMessage = encodeURIComponent(message);
-            
-            // Create the SMS URL
-            const smsUrl = `sms:${phoneNumber}?body=${encodedMessage}`;
-            
-            // Attempt to open the native messaging app
-            window.location.href = smsUrl;
+            sendSMS(phoneNumber, message);
 
             // Update button state and local storage
             const eventKey = `${button.dataset.start}-${button.dataset.end}`;
@@ -266,6 +252,23 @@
             button.textContent = 'Checkout Reminder Sent';
             button.classList.add('checkout-reminder-sent');
             button.removeEventListener('click', sendCheckoutReminder);
+        }
+
+        function sendSMS(phoneNumber, message) {
+            const encodedMessage = encodeURIComponent(message);
+            let smsUrl;
+
+            // Check if the device is iOS
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
+                // iOS devices
+                smsUrl = `sms:${phoneNumber}&body=${encodedMessage}`;
+            } else {
+                // Android and other devices
+                smsUrl = `sms:${phoneNumber}?body=${encodedMessage}`;
+            }
+
+            // Attempt to open the native messaging app
+            window.location.href = smsUrl;
         }
     </script>
 </body>
